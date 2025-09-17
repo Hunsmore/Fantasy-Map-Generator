@@ -335,7 +335,7 @@ window.BurgsAndStates = (() => {
         if (totalCost > growthRate) return;
 
         if (!cost[e] || totalCost < cost[e]) {
-          if (cells.h[e] >= 20) cells.state[e] = s; // assign state to cell
+          if (cells.h[e] >= 20 && cells.s[e] > 0) cells.state[e] = s; // assign state to cell only if suitable
           cost[e] = totalCost;
           queue.push({e, p: totalCost, s, b}, totalCost);
         }
