@@ -68,6 +68,13 @@ window.HeightmapGenerator = (function () {
     Math.random = aleaPRNG(seed);
     const isTemplate = id in heightmapTemplates;
     const heights = isTemplate ? fromTemplate(graph, id) : await fromPrecreated(graph, id);
+    
+    // Apply post-processing for flat-earth template
+    if (id === "flatEarth") {
+      applyFlatEarthPostProcessing(heights, graph);
+      console.log("Flat Earth post-processing applied");
+    }
+    
     TIME && console.timeEnd("defineHeightmap");
 
     clearData();
@@ -521,6 +528,38 @@ window.HeightmapGenerator = (function () {
       const lightness = imageData[i * 4] / 255;
       const powered = lightness < 0.2 ? lightness : 0.2 + (lightness - 0.2) ** 0.8;
       heights[i] = minmax(Math.floor(powered * 100), 0, 100);
+    }
+  }
+
+  function applyFlatEarthPostProcessing(heights, graph) {
+    const {cellsX, cellsY, points} = graph;
+    const centerX = graphWidth / 2;
+    const centerY = graphHeight / 2;
+    const maxRadius = Math.min(graphWidth, graphHeight) / 2;
+    
+    // Create ice wall at the outer edge (width 5, height 100)
+    const iceWallWidth = 5;
+    const iceWallHeight = 100;
+    
+    // Create central island (width 3, height 20)
+    const islandWidth = 3;
+    const islandHeight = 20;
+    
+    for (let i = 0; i < heights.length; i++) {
+      const [x, y] = points[i];
+      
+      // Calculate distance from center
+      const distanceFromCenter = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+      const normalizedDistance = distanceFromCenter / maxRadius;
+      
+      // Apply ice wall at the outer edge
+      if (normalizedDistance > (1 - iceWallWidth / 100)) {
+        heights[i] = iceWallHeight;
+      }
+      // Apply central island
+      else if (normalizedDistance < islandWidth / 100) {
+        heights[i] = Math.max(heights[i], islandHeight);
+      }
     }
   }
 

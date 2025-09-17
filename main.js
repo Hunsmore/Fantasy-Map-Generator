@@ -900,36 +900,88 @@ function calculateTemperatures() {
   cells.temp = new Int8Array(cells.i.length); // temperature array
 
   const {temperatureEquator, temperatureNorthPole, temperatureSouthPole} = options;
-  const tropics = [16, -20]; // tropics zone
-  const tropicalGradient = 0.15;
-
-  const tempNorthTropic = temperatureEquator - tropics[0] * tropicalGradient;
-  const northernGradient = (tempNorthTropic - temperatureNorthPole) / (90 - tropics[0]);
-
-  const tempSouthTropic = temperatureEquator + tropics[1] * tropicalGradient;
-  const southernGradient = (tempSouthTropic - temperatureSouthPole) / (90 + tropics[1]);
-
   const exponent = +heightExponentInput.value;
 
-  for (let rowCellId = 0; rowCellId < cells.i.length; rowCellId += grid.cellsX) {
-    const [, y] = grid.points[rowCellId];
-    const rowLatitude = mapCoordinates.latN - (y / graphHeight) * mapCoordinates.latT; // [90; -90]
-    const tempSeaLevel = calculateSeaLevelTemp(rowLatitude);
-    DEBUG.temperature && console.info(`${rn(rowLatitude)}° sea temperature: ${rn(tempSeaLevel)}°C`);
+  // Check if this is a flat-earth template
+  const isFlatEarth = byId("templateInput").value === "flatEarth";
+  console.log("isFlatEarth", isFlatEarth, byId("templateInput").value);
+  
+  if (isFlatEarth) {
+    console.log("Applying flat-earth temperature model");
+    calculateFlatEarthTemperatures();
+  } else {
+    calculateNormalTemperatures();
+  }
 
-    for (let cellId = rowCellId; cellId < rowCellId + grid.cellsX; cellId++) {
-      const tempAltitudeDrop = getAltitudeTemperatureDrop(cells.h[cellId]);
-      cells.temp[cellId] = minmax(tempSeaLevel - tempAltitudeDrop, -128, 127);
+  function calculateFlatEarthTemperatures() {
+    const centerX = graphWidth / 2;
+    const centerY = graphHeight / 2;
+    const maxRadius = Math.min(graphWidth, graphHeight) / 2;
+    
+    for (let i = 0; i < cells.i.length; i++) {
+      const [x, y] = grid.points[i];
+      const distanceFromCenter = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+      const normalizedDistance = distanceFromCenter / maxRadius;
+      
+      let tempSeaLevel;
+      
+      // Center (0-10% radius): North Pole temperature
+      if (normalizedDistance <= 0.1) {
+        tempSeaLevel = temperatureNorthPole;
+      }
+      // Ice wall and beyond (90-100% radius): South Pole temperature  
+      else if (normalizedDistance >= 0.9) {
+        tempSeaLevel = temperatureSouthPole;
+      }
+      // Middle area (10-90% radius): Equator temperature with smooth transition
+      else {
+        // Smooth transition from North Pole to Equator (10-50%)
+        if (normalizedDistance <= 0.5) {
+          const factor = (normalizedDistance - 0.1) / 0.4; // 0 to 1
+          tempSeaLevel = temperatureNorthPole + (temperatureEquator - temperatureNorthPole) * factor;
+        }
+        // Smooth transition from Equator to South Pole (50-90%)
+        else {
+          const factor = (normalizedDistance - 0.5) / 0.4; // 0 to 1
+          tempSeaLevel = temperatureEquator + (temperatureSouthPole - temperatureEquator) * factor;
+        }
+      }
+      
+      const tempAltitudeDrop = getAltitudeTemperatureDrop(cells.h[i]);
+      cells.temp[i] = minmax(tempSeaLevel - tempAltitudeDrop, -128, 127);
     }
   }
 
-  function calculateSeaLevelTemp(latitude) {
-    const isTropical = latitude <= 16 && latitude >= -20;
-    if (isTropical) return temperatureEquator - Math.abs(latitude) * tropicalGradient;
+  function calculateNormalTemperatures() {
+    const tropics = [16, -20]; // tropics zone
+    const tropicalGradient = 0.15;
 
-    return latitude > 0
-      ? tempNorthTropic - (latitude - tropics[0]) * northernGradient
-      : tempSouthTropic + (latitude - tropics[1]) * southernGradient;
+    const tempNorthTropic = temperatureEquator - tropics[0] * tropicalGradient;
+    const northernGradient = (tempNorthTropic - temperatureNorthPole) / (90 - tropics[0]);
+
+    const tempSouthTropic = temperatureEquator + tropics[1] * tropicalGradient;
+    const southernGradient = (tempSouthTropic - temperatureSouthPole) / (90 + tropics[1]);
+
+    for (let rowCellId = 0; rowCellId < cells.i.length; rowCellId += grid.cellsX) {
+      const [, y] = grid.points[rowCellId];
+      const rowLatitude = mapCoordinates.latN - (y / graphHeight) * mapCoordinates.latT; // [90; -90]
+      const tempSeaLevel = calculateSeaLevelTemp(rowLatitude);
+      DEBUG.temperature && console.info(`${rn(rowLatitude)}° sea temperature: ${rn(tempSeaLevel)}°C`);
+
+      for (let cellId = rowCellId; cellId < rowCellId + grid.cellsX; cellId++) {
+        const tempAltitudeDrop = getAltitudeTemperatureDrop(cells.h[cellId]);
+        cells.temp[cellId] = minmax(tempSeaLevel - tempAltitudeDrop, -128, 127);
+      }
+    }
+
+    function calculateSeaLevelTemp(latitude) {
+      const isTropical = latitude <= 16 && latitude >= -20;
+      if (isTropical) return temperatureEquator - Math.abs(latitude) * tropicalGradient;
+
+      return latitude > 0
+        ? tempNorthTropic - (latitude - tropics[0]) * northernGradient
+        : tempSouthTropic + (latitude - tropics[1]) * southernGradient;
+    }
   }
 
   // temperature drops by 6.5°C per 1km of altitude
