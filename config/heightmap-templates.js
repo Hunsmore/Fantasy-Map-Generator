@@ -163,7 +163,7 @@ const heightmapTemplates = (function () {
     Trough 1-2 40-50 15-85 20-80
     Add 5 all 0 0
     Add 5 land 0 0
-    Mask 2 0 0 0`;
+    Mask 1 0 0 0`;
 
   return {
     volcano: {id: 0, name: "Volcano", template: volcano, probability: 3},

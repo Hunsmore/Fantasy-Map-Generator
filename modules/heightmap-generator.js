@@ -543,7 +543,7 @@ window.HeightmapGenerator = (function () {
     
     // Create central island (width 3, height 20)
     const islandWidth = 3;
-    const islandHeight = 20;
+    const islandHeight = 100;
     
     for (let i = 0; i < heights.length; i++) {
       const [x, y] = points[i];

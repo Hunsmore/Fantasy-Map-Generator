@@ -189,9 +189,9 @@ const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", onZoom);
 let options = {
   pinNotes: false,
   winds: [225, 45, 225, 315, 135, 315],
-  temperatureEquator: 27,
-  temperatureNorthPole: -30,
-  temperatureSouthPole: -15,
+  temperatureEquator: 40,
+  temperatureNorthPole: -20,
+  temperatureSouthPole: -50,
   stateLabelsMode: "auto",
   showBurgPreview: true,
   villageMaxPopulation: 2000
@@ -927,23 +927,23 @@ function calculateTemperatures() {
       
       // Center (0-10% radius): North Pole temperature
       if (normalizedDistance <= 0.1) {
-        tempSeaLevel = temperatureNorthPole;
+        tempSeaLevel = -20;
       }
       // Ice wall and beyond (90-100% radius): South Pole temperature  
-      else if (normalizedDistance >= 0.9) {
-        tempSeaLevel = temperatureSouthPole;
+      else if (normalizedDistance >= 0.95) {
+        tempSeaLevel = -20;
       }
       // Middle area (10-90% radius): Equator temperature with smooth transition
       else {
         // Smooth transition from North Pole to Equator (10-50%)
         if (normalizedDistance <= 0.5) {
           const factor = (normalizedDistance - 0.1) / 0.4; // 0 to 1
-          tempSeaLevel = temperatureNorthPole + (temperatureEquator - temperatureNorthPole) * factor;
+          tempSeaLevel = 10 + (temperatureEquator - 10) * factor;
         }
         // Smooth transition from Equator to South Pole (50-90%)
         else {
           const factor = (normalizedDistance - 0.5) / 0.4; // 0 to 1
-          tempSeaLevel = temperatureEquator + (temperatureSouthPole - temperatureEquator) * factor;
+          tempSeaLevel = temperatureEquator + (10 - temperatureEquator) * factor;
         }
       }
       
