@@ -37,7 +37,11 @@ window.Provinces = (function () {
     }
 
     const provincesRatio = +byId("provincesRatio").value;
-    const max = provincesRatio == 100 ? 1000 : gauss(20, 5, 5, 100) * provincesRatio ** 0.5; // max growth
+    let max = provincesRatio == 100 ? 1000 : gauss(20, 5, 5, 100) * provincesRatio ** 0.5; // max growth
+    
+    // Check if we should use custom province counts for flat earth
+    const template = byId("templateInput").value;
+    const useCustomCountries = template === "flatEarth" && shouldUseCustomCountries();
 
     // generate provinces for selected burgs
     states.forEach(s => {
@@ -51,7 +55,12 @@ window.Provinces = (function () {
         .sort((a, b) => b.population * gauss(1, 0.2, 0.5, 1.5, 3) - a.population)
         .sort((a, b) => b.capital - a.capital);
       if (stateBurgs.length < 2) return; // at least 2 provinces are required
-      const provincesNumber = Math.max(Math.ceil((stateBurgs.length * provincesRatio) / 100), 2);
+      
+      // Use custom province count if available
+      let provincesNumber = Math.max(Math.ceil((stateBurgs.length * provincesRatio) / 100), 2);
+      if (useCustomCountries && s.customProvinceCount) {
+        provincesNumber = Math.min(s.customProvinceCount, stateBurgs.length);
+      }
 
       const form = Object.assign({}, forms[s.form]);
 

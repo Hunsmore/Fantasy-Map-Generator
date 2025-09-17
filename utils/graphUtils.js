@@ -57,6 +57,12 @@ function calculateVoronoi(points, boundary) {
 
 // add points along map edge to pseudo-clip voronoi cells
 function getBoundaryPoints(width, height, spacing) {
+  const template = byId("templateInput")?.value;
+  
+  if (template === "flatEarth") {
+    return getCircularBoundaryPoints(width, height, spacing);
+  }
+  
   const offset = rn(-1 * spacing);
   const bSpacing = spacing * 2;
   const w = width - offset * 2;
@@ -78,8 +84,34 @@ function getBoundaryPoints(width, height, spacing) {
   return points;
 }
 
+// add points along circular boundary for flat earth
+function getCircularBoundaryPoints(width, height, spacing) {
+  const centerX = width / 2;
+  const centerY = height / 2;
+  const radius = Math.min(centerX, centerY) * 1.1; // Slightly larger than the map
+  const bSpacing = spacing * 2;
+  const circumference = 2 * Math.PI * radius;
+  const numberOfPoints = Math.ceil(circumference / bSpacing);
+  const points = [];
+
+  for (let i = 0; i < numberOfPoints; i++) {
+    const angle = (i / numberOfPoints) * 2 * Math.PI;
+    const x = centerX + Math.cos(angle) * radius;
+    const y = centerY + Math.sin(angle) * radius;
+    points.push([x, y]);
+  }
+
+  return points;
+}
+
 // get points on a regular square grid and jitter them a bit
 function getJitteredGrid(width, height, spacing) {
+  const template = byId("templateInput")?.value;
+  
+  if (template === "flatEarth") {
+    return getCircularGrid(width, height, spacing);
+  }
+  
   const radius = spacing / 2; // square radius
   const jittering = radius * 0.9; // max deviation
   const doubleJittering = jittering * 2;
@@ -93,6 +125,41 @@ function getJitteredGrid(width, height, spacing) {
       points.push([xj, yj]);
     }
   }
+  return points;
+}
+
+// get points on a circular grid for flat earth
+function getCircularGrid(width, height, spacing) {
+  const centerX = width / 2;
+  const centerY = height / 2;
+  const maxRadius = Math.min(centerX, centerY) * 0.9;
+  const radius = spacing / 2;
+  const jittering = radius * 0.9;
+  const doubleJittering = jittering * 2;
+  const jitter = () => Math.random() * doubleJittering - jittering;
+
+  let points = [];
+  
+  // Add center point
+  points.push([centerX, centerY]);
+  
+  // Add points in concentric circles
+  for (let r = spacing; r < maxRadius; r += spacing) {
+    const circumference = 2 * Math.PI * r;
+    const numberOfPoints = Math.max(6, Math.ceil(circumference / spacing));
+    
+    for (let i = 0; i < numberOfPoints; i++) {
+      const angle = (i / numberOfPoints) * 2 * Math.PI;
+      const x = centerX + Math.cos(angle) * r + jitter();
+      const y = centerY + Math.sin(angle) * r + jitter();
+      
+      // Ensure points stay within bounds
+      if (x >= 0 && x < width && y >= 0 && y < height) {
+        points.push([x, y]);
+      }
+    }
+  }
+  
   return points;
 }
 

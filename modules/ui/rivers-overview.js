@@ -33,6 +33,11 @@ function overviewRivers() {
     let lines = "";
     const unit = distanceUnitInput.value;
 
+    // Check if rivers is properly initialized
+    if (!pack.rivers || !Array.isArray(pack.rivers)) {
+      return;
+    }
+
     for (const r of pack.rivers) {
       const discharge = r.discharge + " m³/s";
       const length = rn(r.length * distanceScale) + " " + unit;
@@ -112,6 +117,10 @@ function overviewRivers() {
       rivers.attr("data-basin", null);
     } else {
       rivers.attr("data-basin", "hightlighted");
+      // Check if rivers is properly initialized
+      if (!pack.rivers || !Array.isArray(pack.rivers)) {
+        return;
+      }
       const basins = [...new Set(pack.rivers.map(r => r.basin))];
       const colors = [
         "#1f77b4",

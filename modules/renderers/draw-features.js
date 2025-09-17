@@ -11,6 +11,11 @@ function drawFeatures() {
     lakes: {}
   };
 
+  // Check if features is properly initialized
+  if (!pack.features || !Array.isArray(pack.features)) {
+    return;
+  }
+
   for (const feature of pack.features) {
     if (!feature || feature.type === "ocean") continue;
 

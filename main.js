@@ -251,6 +251,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
   restoreDefaultEvents(); // apply default viewbox events
   initiateAutosave();
+  
+  // Initialize country configurator
+  if (typeof initCountryConfigurator === 'function') {
+    initCountryConfigurator();
+  }
 });
 
 function hideLoading() {
@@ -828,6 +833,7 @@ function defineMapSize() {
   function getSizeAndLatitude() {
     const template = byId("templateInput").value; // heightmap template
 
+    if (template === "flatEarth") return [100, 50, 50]; // Full circular map, centered
     if (template === "africa-centric") return [45, 53, 38];
     if (template === "arabia") return [20, 35, 35];
     if (template === "atlantics") return [42, 23, 65];
@@ -899,42 +905,90 @@ function calculateTemperatures() {
   const cells = grid.cells;
   cells.temp = new Int8Array(cells.i.length); // temperature array
 
-  const {temperatureEquator, temperatureNorthPole, temperatureSouthPole} = options;
-  const tropics = [16, -20]; // tropics zone
-  const tropicalGradient = 0.15;
+  const template = byId("templateInput").value;
+  
+  if (template === "flatEarth") {
+    calculateFlatEarthTemperatures();
+  } else {
+    calculateStandardTemperatures();
+  }
 
-  const tempNorthTropic = temperatureEquator - tropics[0] * tropicalGradient;
-  const northernGradient = (tempNorthTropic - temperatureNorthPole) / (90 - tropics[0]);
+  function calculateStandardTemperatures() {
+    const {temperatureEquator, temperatureNorthPole, temperatureSouthPole} = options;
+    const tropics = [16, -20]; // tropics zone
+    const tropicalGradient = 0.15;
 
-  const tempSouthTropic = temperatureEquator + tropics[1] * tropicalGradient;
-  const southernGradient = (tempSouthTropic - temperatureSouthPole) / (90 + tropics[1]);
+    const tempNorthTropic = temperatureEquator - tropics[0] * tropicalGradient;
+    const northernGradient = (tempNorthTropic - temperatureNorthPole) / (90 - tropics[0]);
 
-  const exponent = +heightExponentInput.value;
+    const tempSouthTropic = temperatureEquator + tropics[1] * tropicalGradient;
+    const southernGradient = (tempSouthTropic - temperatureSouthPole) / (90 + tropics[1]);
 
-  for (let rowCellId = 0; rowCellId < cells.i.length; rowCellId += grid.cellsX) {
-    const [, y] = grid.points[rowCellId];
-    const rowLatitude = mapCoordinates.latN - (y / graphHeight) * mapCoordinates.latT; // [90; -90]
-    const tempSeaLevel = calculateSeaLevelTemp(rowLatitude);
-    DEBUG.temperature && console.info(`${rn(rowLatitude)}° sea temperature: ${rn(tempSeaLevel)}°C`);
+    const exponent = +heightExponentInput.value;
 
-    for (let cellId = rowCellId; cellId < rowCellId + grid.cellsX; cellId++) {
-      const tempAltitudeDrop = getAltitudeTemperatureDrop(cells.h[cellId]);
-      cells.temp[cellId] = minmax(tempSeaLevel - tempAltitudeDrop, -128, 127);
+    for (let rowCellId = 0; rowCellId < cells.i.length; rowCellId += grid.cellsX) {
+      const [, y] = grid.points[rowCellId];
+      const rowLatitude = mapCoordinates.latN - (y / graphHeight) * mapCoordinates.latT; // [90; -90]
+      const tempSeaLevel = calculateSeaLevelTemp(rowLatitude);
+      DEBUG.temperature && console.info(`${rn(rowLatitude)}° sea temperature: ${rn(tempSeaLevel)}°C`);
+
+      for (let cellId = rowCellId; cellId < rowCellId + grid.cellsX; cellId++) {
+        const tempAltitudeDrop = getAltitudeTemperatureDrop(cells.h[cellId]);
+        cells.temp[cellId] = minmax(tempSeaLevel - tempAltitudeDrop, -128, 127);
+      }
+    }
+
+    function calculateSeaLevelTemp(latitude) {
+      const isTropical = latitude <= 16 && latitude >= -20;
+      if (isTropical) return temperatureEquator - Math.abs(latitude) * tropicalGradient;
+
+      return latitude > 0
+        ? tempNorthTropic - (latitude - tropics[0]) * northernGradient
+        : tempSouthTropic + (latitude - tropics[1]) * southernGradient;
     }
   }
 
-  function calculateSeaLevelTemp(latitude) {
-    const isTropical = latitude <= 16 && latitude >= -20;
-    if (isTropical) return temperatureEquator - Math.abs(latitude) * tropicalGradient;
-
-    return latitude > 0
-      ? tempNorthTropic - (latitude - tropics[0]) * northernGradient
-      : tempSouthTropic + (latitude - tropics[1]) * southernGradient;
+  function calculateFlatEarthTemperatures() {
+    const {temperatureEquator, temperatureNorthPole, temperatureSouthPole} = options;
+    const centerX = graphWidth / 2;
+    const centerY = graphHeight / 2;
+    const maxRadius = Math.min(centerX, centerY) * 0.9; // Same as in flat earth generator
+    
+    // Flat earth temperature model: center (North Pole) is coldest, then gets warmer, then colder at edge (ice wall)
+    // Make climate more habitable by adjusting temperature ranges
+    const centerTemp = Math.max(temperatureNorthPole, -15); // Warmer center, minimum -15°C
+    const warmestTemp = temperatureEquator; // 27°C at warmest point
+    const edgeTemp = Math.max(temperatureSouthPole, -10); // Warmer edge, minimum -10°C
+    
+    // Calculate warmest point distance (about 50% from center for more habitable area)
+    const warmestDistance = maxRadius * 0.5;
+    
+    for (let i = 0; i < cells.i.length; i++) {
+      const [x, y] = grid.points[i];
+      const distanceFromCenter = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+      
+      let tempSeaLevel;
+      
+      if (distanceFromCenter <= warmestDistance) {
+        // From center to warmest point: linear increase
+        const ratio = distanceFromCenter / warmestDistance;
+        tempSeaLevel = centerTemp + (warmestTemp - centerTemp) * ratio;
+      } else {
+        // From warmest point to edge: linear decrease
+        const ratio = (distanceFromCenter - warmestDistance) / (maxRadius - warmestDistance);
+        tempSeaLevel = warmestTemp + (edgeTemp - warmestTemp) * ratio;
+      }
+      
+      // Apply altitude temperature drop
+      const tempAltitudeDrop = getAltitudeTemperatureDrop(cells.h[i]);
+      cells.temp[i] = minmax(tempSeaLevel - tempAltitudeDrop, -128, 127);
+    }
   }
 
   // temperature drops by 6.5°C per 1km of altitude
   function getAltitudeTemperatureDrop(h) {
     if (h < 20) return 0;
+    const exponent = +heightExponentInput.value;
     const height = Math.pow(h - 18, exponent);
     return rn((height / 1000) * 6.5);
   }
@@ -949,26 +1003,35 @@ function generatePrecipitation() {
   const {cells, cellsX, cellsY} = grid;
   cells.prec = new Uint8Array(cells.i.length); // precipitation array
 
-  const cellsNumberModifier = (pointsInput.dataset.cells / 10000) ** 0.25;
-  const precInputModifier = precInput.value / 100;
-  const modifier = cellsNumberModifier * precInputModifier;
+  const template = byId("templateInput").value;
+  
+  if (template === "flatEarth") {
+    generateFlatEarthPrecipitation();
+  } else {
+    generateStandardPrecipitation();
+  }
 
-  const westerly = [];
-  const easterly = [];
-  let southerly = 0;
-  let northerly = 0;
+  function generateStandardPrecipitation() {
+    const cellsNumberModifier = (pointsInput.dataset.cells / 10000) ** 0.25;
+    const precInputModifier = precInput.value / 100;
+    const modifier = cellsNumberModifier * precInputModifier;
 
-  // precipitation modifier per latitude band
-  // x4 = 0-5 latitude: wet through the year (rising zone)
-  // x2 = 5-20 latitude: wet summer (rising zone), dry winter (sinking zone)
-  // x1 = 20-30 latitude: dry all year (sinking zone)
-  // x2 = 30-50 latitude: wet winter (rising zone), dry summer (sinking zone)
-  // x3 = 50-60 latitude: wet all year (rising zone)
-  // x2 = 60-70 latitude: wet summer (rising zone), dry winter (sinking zone)
-  // x1 = 70-85 latitude: dry all year (sinking zone)
-  // x0.5 = 85-90 latitude: dry all year (sinking zone)
-  const latitudeModifier = [4, 2, 2, 2, 1, 1, 2, 2, 2, 2, 3, 3, 2, 2, 1, 1, 1, 0.5];
-  const MAX_PASSABLE_ELEVATION = 85;
+    const westerly = [];
+    const easterly = [];
+    let southerly = 0;
+    let northerly = 0;
+
+    // precipitation modifier per latitude band
+    // x4 = 0-5 latitude: wet through the year (rising zone)
+    // x2 = 5-20 latitude: wet summer (rising zone), dry winter (sinking zone)
+    // x1 = 20-30 latitude: dry all year (sinking zone)
+    // x2 = 30-50 latitude: wet winter (rising zone), dry summer (sinking zone)
+    // x3 = 50-60 latitude: wet all year (rising zone)
+    // x2 = 60-70 latitude: wet summer (rising zone), dry winter (sinking zone)
+    // x1 = 70-85 latitude: dry all year (sinking zone)
+    // x0.5 = 85-90 latitude: dry all year (sinking zone)
+    const latitudeModifier = [4, 2, 2, 2, 1, 1, 2, 2, 2, 2, 3, 3, 2, 2, 1, 1, 1, 0.5];
+    const MAX_PASSABLE_ELEVATION = 85;
 
   // define wind directions based on cells latitude and prevailing winds there
   d3.range(0, cells.i.length, cellsX).forEach(function (c, i) {
@@ -1101,6 +1164,71 @@ function generatePrecipitation() {
         .attr("y", graphHeight - 20)
         .text("\u21C8");
   })();
+  }
+
+  function generateFlatEarthPrecipitation() {
+    const cellsNumberModifier = (pointsInput.dataset.cells / 10000) ** 0.25;
+    const precInputModifier = precInput.value / 100;
+    const modifier = cellsNumberModifier * precInputModifier;
+    
+    const centerX = graphWidth / 2;
+    const centerY = graphHeight / 2;
+    const maxRadius = Math.min(centerX, centerY) * 0.9;
+    
+    // Flat earth precipitation model: radial distribution
+    // Center (North Pole): very dry (ice desert)
+    // Middle ring: moderate precipitation
+    // Outer ring: wet (ocean influence)
+    // Edge (ice wall): very dry
+    
+    for (let i = 0; i < cells.i.length; i++) {
+      const [x, y] = grid.points[i];
+      const distanceFromCenter = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+      const normalizedDistance = distanceFromCenter / maxRadius;
+      
+      let basePrecipitation;
+      
+      if (normalizedDistance < 0.15) {
+        // Center region: dry but not extreme
+        basePrecipitation = 10 + Math.random() * 15;
+      } else if (normalizedDistance < 0.35) {
+        // Inner ring: moderate precipitation
+        basePrecipitation = 25 + Math.random() * 25;
+      } else if (normalizedDistance < 0.65) {
+        // Middle ring: good precipitation (most habitable)
+        basePrecipitation = 40 + Math.random() * 40;
+      } else if (normalizedDistance < 0.85) {
+        // Outer ring: wet (ocean influence)
+        basePrecipitation = 50 + Math.random() * 30;
+      } else {
+        // Edge region: moderate precipitation
+        basePrecipitation = 20 + Math.random() * 20;
+      }
+      
+      // Apply temperature and altitude modifiers
+      const temp = cells.temp[i];
+      const height = cells.h[i];
+      
+      // Cold areas have less precipitation (snow instead of rain)
+      let tempModifier = 1;
+      if (temp < -10) tempModifier = 0.3;
+      else if (temp < 0) tempModifier = 0.6;
+      else if (temp > 25) tempModifier = 1.2;
+      
+      // High altitude areas have more precipitation (orographic effect)
+      let heightModifier = 1;
+      if (height > 70) heightModifier = 1.5;
+      else if (height > 50) heightModifier = 1.2;
+      else if (height < 20) heightModifier = 0.8; // Ocean areas
+      
+      // Add some randomness for realistic variation
+      const randomModifier = 0.8 + Math.random() * 0.4;
+      
+      cells.prec[i] = Math.min(255, Math.max(0, 
+        basePrecipitation * tempModifier * heightModifier * randomModifier * modifier
+      ));
+    }
+  }
 
   TIME && console.timeEnd("generatePrecipitation");
 }

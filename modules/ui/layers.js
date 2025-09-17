@@ -795,6 +795,12 @@ function drawRivers() {
   TIME && console.time("drawRivers");
   rivers.selectAll("*").remove();
 
+  // Check if rivers is properly initialized
+  if (!pack.rivers || !Array.isArray(pack.rivers)) {
+    TIME && console.timeEnd("drawRivers");
+    return;
+  }
+
   const riverPaths = pack.rivers.map(({cells, points, i, widthFactor, sourceWidth}) => {
     if (!cells || cells.length < 2) return;
 

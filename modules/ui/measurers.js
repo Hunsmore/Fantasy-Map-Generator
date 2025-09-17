@@ -535,8 +535,21 @@ function createDefaultRuler() {
   TIME && console.time("createDefaultRuler");
   const {features, vertices} = pack;
 
+  // Check if features is properly initialized
+  if (!features || !Array.isArray(features) || features.length === 0) {
+    TIME && console.timeEnd("createDefaultRuler");
+    return;
+  }
+
   const areas = features.map(f => (f.land ? f.area || 0 : -Infinity));
   const largestLand = areas.indexOf(Math.max(...areas));
+  
+  // Check if largestLand is valid and has vertices
+  if (largestLand === -1 || !features[largestLand] || !features[largestLand].vertices) {
+    TIME && console.timeEnd("createDefaultRuler");
+    return;
+  }
+  
   const featureVertices = features[largestLand].vertices;
 
   const MIN_X = 100;

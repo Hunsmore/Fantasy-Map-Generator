@@ -75,6 +75,13 @@ window.BurgsAndStates = (() => {
       const colors = getColors(burgs.length - 1);
       const each5th = each(5);
 
+      // Check if we should use custom countries
+      const template = byId("templateInput").value;
+      const useCustomCountries = template === "flatEarth" && shouldUseCustomCountries();
+      const customCountries = useCustomCountries ? getCustomCountryNames() : [];
+      const customSizes = useCustomCountries ? getCustomCountrySizes() : [];
+      const customProvinceCounts = useCustomCountries ? getCustomProvinceCounts() : [];
+
       burgs.forEach((b, i) => {
         if (!i) return; // skip first element
 
@@ -87,22 +94,38 @@ window.BurgsAndStates = (() => {
 
         // states data
         const expansionism = rn(Math.random() * byId("sizeVariety").value + 1, 1);
-        const basename = b.name.length < 9 && each5th(b.cell) ? b.name : Names.getCultureShort(b.culture);
-        const name = Names.getState(basename, b.culture);
+        
+        // Use custom country name if available
+        let name;
+        if (useCustomCountries && customCountries[i - 1]) {
+          name = customCountries[i - 1];
+        } else {
+          const basename = b.name.length < 9 && each5th(b.cell) ? b.name : Names.getCultureShort(b.culture);
+          name = Names.getState(basename, b.culture);
+        }
+        
         const type = cultures[b.culture].type;
 
         const coa = COA.generate(null, null, null, type);
         coa.shield = COA.getShield(b.culture, null);
+        
+        // Apply custom size if available
+        let customExpansionism = expansionism;
+        if (useCustomCountries && customSizes[i - 1]) {
+          customExpansionism = customSizes[i - 1] / 10; // Convert percentage to expansionism
+        }
+        
         states.push({
           i,
           color: colors[i - 1],
           name,
-          expansionism,
+          expansionism: customExpansionism,
           capital: i,
           type,
           center: b.cell,
           culture: b.culture,
-          coa
+          coa,
+          customProvinceCount: useCustomCountries && customProvinceCounts[i - 1] ? customProvinceCounts[i - 1] : null
         });
         cells.burg[b.cell] = i;
       });

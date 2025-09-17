@@ -1677,6 +1677,16 @@
               </td>
             </tr>
 
+            <tr data-tip="Define how many continents should be generated (Flat Earth only)" id="continentCountRow" style="display: none;">
+              <td>
+                <i data-locked="0" id="lock_continentCount" class="icon-lock-open"></i>
+              </td>
+              <td>Continent count</td>
+              <td colspan="2">
+                <slider-input id="continentCountInput" data-stored="continentCount" min="1" max="8" value="3"></slider-input>
+              </td>
+            </tr>
+
             <tr data-tip="Define burgs percentage to form a separate province">
               <td>
                 <i data-locked="0" id="lock_provincesRatio" class="icon-lock-open"></i>
@@ -2007,6 +2017,13 @@
               onclick="editWorld()"
             >
               Configure World
+            </button>
+            <button
+              id="configureCountries"
+              data-tip="Click to open country configurator to setup custom countries for flat earth"
+              onclick="editCountries()"
+            >
+              Configure Countries
             </button>
             <button
               id="optionsReset"
@@ -2640,6 +2657,46 @@
           <button id="wcNorthern" data-tip="Click to set map size to cover the Northern latitudes">Northern</button>
           <button id="wcTropical" data-tip="Click to set map size to cover the Tropical latitudes">Tropical</button>
           <button id="wcSouthern" data-tip="Click to set map size to cover the Southern latitudes">Southern</button>
+        </div>
+      </div>
+
+      <div id="countryConfigurator" class="dialog stable" style="display: none">
+        <div style="display: flex; flex-direction: column; gap: 1em;">
+          <div>
+            <h3>Country Configuration</h3>
+            <p>Configure countries for your flat earth world</p>
+          </div>
+          
+          <div>
+            <label>
+              <input type="checkbox" id="useCustomCountries" />
+              Use custom country list
+            </label>
+          </div>
+          
+          <div id="customCountriesSection" style="display: none;">
+            <div>
+              <label>Country List (one per line):</label>
+              <textarea id="countryList" rows="10" cols="30" placeholder="Enter country names, one per line..."></textarea>
+            </div>
+            
+            <div>
+              <label>Country Sizes (comma-separated percentages):</label>
+              <input type="text" id="countrySizes" placeholder="e.g., 25, 20, 15, 10, 8, 7, 6, 5, 4" />
+              <small>Leave empty for random sizes</small>
+            </div>
+            
+            <div>
+              <label>Province Counts (comma-separated numbers):</label>
+              <input type="text" id="provinceCounts" placeholder="e.g., 8, 6, 4, 3, 2, 2, 1, 1, 1" />
+              <small>Leave empty for random counts</small>
+            </div>
+          </div>
+          
+          <div>
+            <button id="applyCountryConfig">Apply Configuration</button>
+            <button id="resetCountryConfig">Reset to Default</button>
+          </div>
         </div>
       </div>
 
@@ -8092,6 +8149,7 @@
     <script src="config/heightmap-templates.js"></script>
     <script src="config/precreated-heightmaps.js"></script>
     <script src="modules/heightmap-generator.js?v=1.99.00"></script>
+    <script src="modules/flat-earth-generator.js"></script>
     <script src="modules/features.js?v=1.104.0"></script>
     <script src="modules/ocean-layers.js?v=1.108.4"></script>
     <script src="modules/river-generator.js?v=1.106.7"></script>
@@ -8118,6 +8176,7 @@
     <script src="modules/ui/style-presets.js?v=1.100.00"></script>
     <script src="modules/ui/general.js?v=1.100.00"></script>
     <script src="modules/ui/options.js?v=1.106.2"></script>
+    <script src="modules/ui/country-configurator.js"></script>
     <script src="main.js?v=1.108.1"></script>
 
     <script defer src="modules/ui/style.js?v=1.108.4"></script>

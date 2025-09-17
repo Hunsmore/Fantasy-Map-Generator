@@ -147,6 +147,22 @@ const heightmapTemplates = (function () {
     Add -20 30-100 0 0
     Range 6-8 40-50 5-95 10-90`;
 
+  const flatEarth = `Add 15 all 0 0
+    Hill 1 85-95 50-50 50-50
+    Add 5 all 0 0
+    Hill 4-5 25-35 30-70 30-70
+    Range 1 35-45 45-55 45-55
+    Multiply 0.8 land 0 0
+    Mask 3 0 0 0
+    Smooth 2 0 0 0
+    Trough 2-3 20-30 25-35 25-35
+    Trough 2-3 20-30 65-75 65-75
+    Hill 1 10-15 50-50 50-50
+    Hill 1.5 15-20 20-30 20-80
+    Range 1.5 25-35 20-80 30-40
+    Range 1.5 25-35 20-80 60-70
+    Pit 3-4 10-25 20-80 20-80`;
+
   return {
     volcano: {id: 0, name: "Volcano", template: volcano, probability: 3},
     highIsland: {id: 1, name: "High Island", template: highIsland, probability: 19},
@@ -161,6 +177,7 @@ const heightmapTemplates = (function () {
     shattered: {id: 10, name: "Shattered", template: shattered, probability: 7},
     taklamakan: {id: 11, name: "Taklamakan", template: taklamakan, probability: 1},
     oldWorld: {id: 12, name: "Old World", template: oldWorld, probability: 8},
-    fractious: {id: 13, name: "Fractious", template: fractious, probability: 3}
+    fractious: {id: 13, name: "Fractious", template: fractious, probability: 3},
+    flatEarth: {id: 14, name: "Flat Earth", template: flatEarth, probability: 5}
   };
 })();

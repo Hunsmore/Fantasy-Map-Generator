@@ -149,6 +149,7 @@ optionsContent.addEventListener("change", event => {
   else if (id === "eraInput") changeEra();
   else if (id === "stateLabelsModeInput") options.stateLabelsMode = value;
   else if (id === "azgaarAssistant") toggleAssistant();
+  else if (id === "templateInput") handleTemplateChange(value);
 });
 
 optionsContent.addEventListener("click", event => {
@@ -206,11 +207,11 @@ function applyGraphSize() {
 
 // on generate, on load, on resize, on canvas size change
 function fitMapToScreen() {
-  svgWidth = Math.min(+mapWidthInput.value, window.innerWidth);
-  svgHeight = Math.min(+mapHeightInput.value, window.innerHeight);
-  svg.attr("width", svgWidth).attr("height", svgHeight);
+  window.svgWidth = Math.min(+mapWidthInput.value, window.innerWidth);
+  window.svgHeight = Math.min(+mapHeightInput.value, window.innerHeight);
+  svg.attr("width", window.svgWidth).attr("height", window.svgHeight);
 
-  const zoomMin = rn(Math.max(svgWidth / graphWidth, svgHeight / graphHeight), 3);
+  const zoomMin = rn(Math.max(window.svgWidth / graphWidth, window.svgHeight / graphHeight), 3);
   zoomExtentMin.value = zoomMin;
   const zoomMax = +zoomExtentMax.value;
 
@@ -221,7 +222,7 @@ function fitMapToScreen() {
     ])
     .scaleExtent([zoomMin, zoomMax]);
 
-  fitScaleBar(scaleBar, svgWidth, svgHeight);
+  fitScaleBar(scaleBar, window.svgWidth, window.svgHeight);
   if (window.fitLegendBox) fitLegendBox();
 }
 
@@ -519,6 +520,16 @@ function restoreDefaultZoomExtent() {
   zoom.scaleExtent([1, 20]).scaleTo(svg, 1);
 }
 
+// Handle template change to show/hide flat earth specific options
+function handleTemplateChange(template) {
+  const continentCountRow = byId("continentCountRow");
+  if (template === "flatEarth") {
+    continentCountRow.style.display = "";
+  } else {
+    continentCountRow.style.display = "none";
+  }
+}
+
 // restore options stored in localStorage
 function applyStoredOptions() {
   if (!stored("mapWidth") || !stored("mapHeight")) {
@@ -530,6 +541,7 @@ function applyStoredOptions() {
   if (heightmapId) {
     const name = heightmapTemplates[heightmapId]?.name || precreatedHeightmaps[heightmapId]?.name || heightmapId;
     applyOption(byId("templateInput"), heightmapId, name);
+    handleTemplateChange(heightmapId);
   }
 
   if (stored("distanceUnit")) applyOption(distanceUnitInput, stored("distanceUnit"));
@@ -627,6 +639,7 @@ function randomizeHeightmapTemplate() {
   const template = rw(templates);
   const name = heightmapTemplates[template].name;
   applyOption(byId("templateInput"), template, name);
+  handleTemplateChange(template);
 }
 
 // select culture set pseudo-randomly
@@ -976,8 +989,8 @@ async function enter3dView(type) {
     canvas.height = canvas.width / (graphWidth / graphHeight);
     canvas.style.display = "block";
   } else {
-    canvas.width = svgWidth;
-    canvas.height = svgHeight;
+    canvas.width = window.svgWidth;
+    canvas.height = window.svgHeight;
     canvas.style.position = "absolute";
     canvas.style.display = "none";
   }

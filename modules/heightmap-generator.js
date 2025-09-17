@@ -67,11 +67,26 @@ window.HeightmapGenerator = (function () {
 
     Math.random = aleaPRNG(seed);
     const isTemplate = id in heightmapTemplates;
-    const heights = isTemplate ? fromTemplate(graph, id) : await fromPrecreated(graph, id);
+    let heights;
+    
+    if (id === "flatEarth") {
+      // Use flat earth generator, fallback to template if null
+      const continentCount = +byId("continentCountInput")?.value || 3;
+      heights = FlatEarthGenerator.generateFlatEarth(graph, {continentCount});
+      if (heights === null) {
+        heights = fromTemplate(graph, id);
+      }
+    } else if (isTemplate) {
+      heights = fromTemplate(graph, id);
+    } else {
+      heights = await fromPrecreated(graph, id);
+    }
+    
     TIME && console.timeEnd("defineHeightmap");
 
+    const result = heights;
     clearData();
-    return heights;
+    return result;
   };
 
   function addStep(tool, a2, a3, a4, a5) {

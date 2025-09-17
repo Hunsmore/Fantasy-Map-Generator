@@ -84,7 +84,12 @@ window.Features = (function () {
     const {cells, vertices} = pack;
     const {c: neighbors, b: borderCells, i} = cells;
     const packCellsNumber = i.length;
-    if (!packCellsNumber) return; // no cells -> there is nothing to do
+    if (!packCellsNumber) {
+      // Initialize empty features array if no cells
+      pack.features = [0];
+      TIME && console.timeEnd("markupPack");
+      return;
+    }
 
     const distanceField = new Int8Array(packCellsNumber); // pack.cells.t
     const featureIds = new Uint16Array(packCellsNumber); // pack.cells.f
