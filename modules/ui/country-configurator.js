@@ -86,6 +86,7 @@ function applyCountryConfiguration() {
   countryConfig.countries = countries;
   countryConfig.sizes = sizes;
   countryConfig.provinceCounts = counts;
+  countryConfig.useCustom = byId("useCustomCountries").checked;
 
   // Save to localStorage
   localStorage.setItem("countryConfig", JSON.stringify(countryConfig));

@@ -190,8 +190,8 @@ let options = {
   pinNotes: false,
   winds: [225, 45, 225, 315, 135, 315],
   temperatureEquator: 27,
-  temperatureNorthPole: -30,
-  temperatureSouthPole: -15,
+  temperatureNorthPole: 5,
+  temperatureSouthPole: -20,
   stateLabelsMode: "auto",
   showBurgPreview: true,
   villageMaxPopulation: 2000

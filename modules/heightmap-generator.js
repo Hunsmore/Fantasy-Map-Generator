@@ -166,10 +166,13 @@ window.HeightmapGenerator = (function () {
       while (queue.length) {
         const q = queue.shift();
 
-        for (const c of grid.cells.c[q]) {
-          if (change[c]) continue;
-          change[c] = change[q] ** blobPower * (Math.random() * 0.2 + 0.9);
-          if (change[c] > 1) queue.push(c);
+        const neighbors = grid.cells.c[q];
+        if (neighbors && Array.isArray(neighbors)) {
+          for (const c of neighbors) {
+            if (change[c]) continue;
+            change[c] = change[q] ** blobPower * (Math.random() * 0.2 + 0.9);
+            if (change[c] > 1) queue.push(c);
+          }
         }
       }
 
@@ -203,12 +206,15 @@ window.HeightmapGenerator = (function () {
         h = h ** blobPower * (Math.random() * 0.2 + 0.9);
         if (h < 1) return;
 
-        grid.cells.c[q].forEach(function (c, i) {
-          if (used[c]) return;
-          heights[c] = lim(heights[c] - h * (Math.random() * 0.2 + 0.9));
-          used[c] = 1;
-          queue.push(c);
-        });
+        const neighbors = grid.cells.c[q];
+        if (neighbors && Array.isArray(neighbors)) {
+          neighbors.forEach(function (c, i) {
+            if (used[c]) return;
+            heights[c] = lim(heights[c] - h * (Math.random() * 0.2 + 0.9));
+            used[c] = 1;
+            queue.push(c);
+          });
+        }
       }
     }
   };
@@ -256,15 +262,18 @@ window.HeightmapGenerator = (function () {
 
         while (cur !== end) {
           let min = Infinity;
-          grid.cells.c[cur].forEach(function (e) {
-            if (used[e]) return;
-            let diff = (p[end][0] - p[e][0]) ** 2 + (p[end][1] - p[e][1]) ** 2;
-            if (Math.random() > 0.85) diff = diff / 2;
-            if (diff < min) {
-              min = diff;
-              cur = e;
-            }
-          });
+          const neighbors = grid.cells.c[cur];
+          if (neighbors && Array.isArray(neighbors)) {
+            neighbors.forEach(function (e) {
+              if (used[e]) return;
+              let diff = (p[end][0] - p[e][0]) ** 2 + (p[end][1] - p[e][1]) ** 2;
+              if (Math.random() > 0.85) diff = diff / 2;
+              if (diff < min) {
+                min = diff;
+                cur = e;
+              }
+            });
+          }
           if (min === Infinity) return range;
           range.push(cur);
           used[cur] = 1;
@@ -285,12 +294,15 @@ window.HeightmapGenerator = (function () {
         h = h ** linePower - 1;
         if (h < 2) break;
         frontier.forEach(f => {
-          grid.cells.c[f].forEach(i => {
-            if (!used[i]) {
-              queue.push(i);
-              used[i] = 1;
-            }
-          });
+          const neighbors = grid.cells.c[f];
+          if (neighbors && Array.isArray(neighbors)) {
+            neighbors.forEach(i => {
+              if (!used[i]) {
+                queue.push(i);
+                used[i] = 1;
+              }
+            });
+          }
         });
       }
 
@@ -353,15 +365,18 @@ window.HeightmapGenerator = (function () {
 
         while (cur !== end) {
           let min = Infinity;
-          grid.cells.c[cur].forEach(function (e) {
-            if (used[e]) return;
-            let diff = (p[end][0] - p[e][0]) ** 2 + (p[end][1] - p[e][1]) ** 2;
-            if (Math.random() > 0.8) diff = diff / 2;
-            if (diff < min) {
-              min = diff;
-              cur = e;
-            }
-          });
+          const neighbors = grid.cells.c[cur];
+          if (neighbors && Array.isArray(neighbors)) {
+            neighbors.forEach(function (e) {
+              if (used[e]) return;
+              let diff = (p[end][0] - p[e][0]) ** 2 + (p[end][1] - p[e][1]) ** 2;
+              if (Math.random() > 0.8) diff = diff / 2;
+              if (diff < min) {
+                min = diff;
+                cur = e;
+              }
+            });
+          }
           if (min === Infinity) return range;
           range.push(cur);
           used[cur] = 1;
@@ -382,12 +397,15 @@ window.HeightmapGenerator = (function () {
         h = h ** linePower - 1;
         if (h < 2) break;
         frontier.forEach(f => {
-          grid.cells.c[f].forEach(i => {
-            if (!used[i]) {
-              queue.push(i);
-              used[i] = 1;
-            }
-          });
+          const neighbors = grid.cells.c[f];
+          if (neighbors && Array.isArray(neighbors)) {
+            neighbors.forEach(i => {
+              if (!used[i]) {
+                queue.push(i);
+                used[i] = 1;
+              }
+            });
+          }
         });
       }
 
@@ -429,14 +447,17 @@ window.HeightmapGenerator = (function () {
 
       while (cur !== end) {
         let min = Infinity;
-        grid.cells.c[cur].forEach(function (e) {
-          let diff = (p[end][0] - p[e][0]) ** 2 + (p[end][1] - p[e][1]) ** 2;
-          if (Math.random() > 0.8) diff = diff / 2;
-          if (diff < min) {
-            min = diff;
-            cur = e;
-          }
-        });
+        const neighbors = grid.cells.c[cur];
+        if (neighbors && Array.isArray(neighbors)) {
+          neighbors.forEach(function (e) {
+            let diff = (p[end][0] - p[e][0]) ** 2 + (p[end][1] - p[e][1]) ** 2;
+            if (Math.random() > 0.8) diff = diff / 2;
+            if (diff < min) {
+              min = diff;
+              cur = e;
+            }
+          });
+        }
         range.push(cur);
       }
 
@@ -448,13 +469,16 @@ window.HeightmapGenerator = (function () {
     while (width > 0) {
       const exp = 0.9 - step * width;
       range.forEach(function (r) {
-        grid.cells.c[r].forEach(function (e) {
-          if (used[e]) return;
-          used[e] = 1;
-          query.push(e);
-          heights[e] **= exp;
-          if (heights[e] > 100) heights[e] = 5;
-        });
+        const neighbors = grid.cells.c[r];
+        if (neighbors && Array.isArray(neighbors)) {
+          neighbors.forEach(function (e) {
+            if (used[e]) return;
+            used[e] = 1;
+            query.push(e);
+            heights[e] **= exp;
+            if (heights[e] > 100) heights[e] = 5;
+          });
+        }
       });
       range = query.slice();
 
@@ -480,7 +504,10 @@ window.HeightmapGenerator = (function () {
   const smooth = (fr = 2, add = 0) => {
     heights = heights.map((h, i) => {
       const a = [h];
-      grid.cells.c[i].forEach(c => a.push(heights[c]));
+      const neighbors = grid.cells.c[i];
+      if (neighbors && Array.isArray(neighbors)) {
+        neighbors.forEach(c => a.push(heights[c]));
+      }
       if (fr === 1) return d3.mean(a) + add;
       return lim((h * (fr - 1) + d3.mean(a) + add) / fr);
     });

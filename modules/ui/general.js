@@ -3,8 +3,8 @@
 
 window.addEventListener("resize", function (e) {
   if (stored("mapWidth") && stored("mapHeight")) return;
-  mapWidthInput.value = window.innerWidth;
-  mapHeightInput.value = window.innerHeight;
+  mapWidthInput.value = 1000;
+  mapHeightInput.value = 1000;
   fitMapToScreen();
 });
 

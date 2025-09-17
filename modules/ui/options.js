@@ -185,8 +185,8 @@ function mapSizeInputChange() {
 }
 
 function restoreDefaultCanvasSize() {
-  mapWidthInput.value = window.innerWidth;
-  mapHeightInput.value = window.innerHeight;
+  mapWidthInput.value = 1000;
+  mapHeightInput.value = 1000;
   localStorage.removeItem("mapHeight");
   localStorage.removeItem("mapWidth");
   fitMapToScreen();
@@ -533,8 +533,8 @@ function handleTemplateChange(template) {
 // restore options stored in localStorage
 function applyStoredOptions() {
   if (!stored("mapWidth") || !stored("mapHeight")) {
-    mapWidthInput.value = window.innerWidth;
-    mapHeightInput.value = window.innerHeight;
+    mapWidthInput.value = 1000;
+    mapHeightInput.value = 1000;
   }
 
   const heightmapId = stored("template");
